@@ -2,11 +2,13 @@ import express from "express";
 import { config } from "./config.js";
 import {
   extractEmail,
-  extractName,
+  extractTitle,
   getEntity,
   isEmailConfirmed,
+  isReferralDeal,
   markEmailConfirmed,
   markReferralParticipant,
+  resolveDealPerson,
   resolveParticipantCode,
   participantReferralLink,
 } from "./bitrix.js";
@@ -29,9 +31,7 @@ function verifyBitrixAppToken(body) {
   return token === config.bitrixAppToken;
 }
 
-function parseBitrixWebhookBody(body) {
-  // Bitrix исходящий webhook: form-urlencoded или JSON
-  const event = body.event || body.EVENT || body["event"];
+function extractEntityId(body) {
   let entityId =
     body?.data?.FIELDS?.ID ||
     body?.["data[FIELDS][ID]"] ||
@@ -40,25 +40,56 @@ function parseBitrixWebhookBody(body) {
 
   if (!entityId && typeof body === "object") {
     for (const key of Object.keys(body)) {
-      const m = key.match(/^data\[FIELDS\]\[ID\]$/);
-      if (m) entityId = body[key];
+      if (/^data\[FIELDS\]\[ID\]$/i.test(key)) entityId = body[key];
     }
   }
+  return Number(entityId) || 0;
+}
 
-  entityId = Number(entityId);
-  if (!entityId) return null;
+/**
+ * Разбор исходящего webhook Bitrix.
+ * Контур только deal: ONCRMDEALADD / ONCRMDEALUPDATE.
+ * Контакты и лиды игнорируем.
+ */
+function parseBitrixWebhookBody(body) {
+  const event = String(body?.event || body?.EVENT || "").toUpperCase();
+  const entityId = extractEntityId(body);
 
-  const entityType = config.entityType;
-  return { event, entityId, entityType };
+  if (!event) {
+    return { ok: false, reason: "no_event", entityId };
+  }
+
+  if (event.includes("CONTACT")) {
+    return { ok: false, reason: "ignored_contact_event", event, entityId };
+  }
+  if (event.includes("LEAD")) {
+    return { ok: false, reason: "ignored_lead_event", event, entityId };
+  }
+  if (!event.includes("DEAL")) {
+    return { ok: false, reason: "ignored_event", event, entityId };
+  }
+  if (!entityId) {
+    return { ok: false, reason: "no_entity_id", event };
+  }
+
+  return { ok: true, event, entityId, entityType: "deal" };
 }
 
 async function startConfirmationFlow(entityType, entityId) {
   const entity = await getEntity(entityType, entityId);
-  const email = extractEmail(entity);
-  const name = extractName(entity);
+  const title = extractTitle(entity);
+
+  // Жёсткий фильтр: только форма реферальной программы
+  if (!isReferralDeal(entity)) {
+    log("skip: not referral deal", { entityId, title });
+    return { skipped: true, reason: "not_referral_deal", title };
+  }
+
+  const person = await resolveDealPerson(entity);
+  const { email, name } = person;
 
   if (!email) {
-    log("skip: no email", { entityId });
+    log("skip: no email", { entityId, title, contactId: person.contactId || null });
     return { skipped: true, reason: "no_email" };
   }
 
@@ -76,18 +107,28 @@ async function startConfirmationFlow(entityType, entityId) {
     expiresHours: config.tokenTtlHours,
   });
 
-  log("confirm email sent", { entityId, email: email.replace(/(.{2}).+(@.+)/, "$1***$2") });
+  log("confirm email sent", {
+    entityId,
+    title,
+    contactId: person.contactId || null,
+    email: email.replace(/(.{2}).+(@.+)/, "$1***$2"),
+  });
   return { ok: true, entityId, emailSent: true };
 }
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "avgst-referral-handler" });
+  res.json({
+    ok: true,
+    service: "avgst-referral-handler",
+    entityType: "deal",
+    referralTitleMatch: config.referralTitleMatch,
+    stageAfterConfirm: config.stageAfterConfirm,
+  });
 });
 
 /**
  * Исходящий webhook Bitrix24.
- * В Bitrix: Разработчикам → Другое → Исходящий webhook
- * Событие: ONCRMLEADADD (или ONCRMDEALADD)
+ * События: ONCRMDEALADD, ONCRMDEALUPDATE
  * URL: https://your-domain/webhook/bitrix
  */
 app.post("/webhook/bitrix", async (req, res) => {
@@ -98,9 +139,13 @@ app.post("/webhook/bitrix", async (req, res) => {
     }
 
     const parsed = parseBitrixWebhookBody(req.body);
-    if (!parsed?.entityId) {
-      log("bitrix webhook: no entity id", { event: req.body?.event });
-      return res.status(200).json({ ok: true, skipped: true, reason: "no_entity_id" });
+    if (!parsed.ok) {
+      log("bitrix webhook: skipped", {
+        reason: parsed.reason,
+        event: parsed.event,
+        entityId: parsed.entityId || undefined,
+      });
+      return res.status(200).json({ ok: true, skipped: true, reason: parsed.reason });
     }
 
     // Bitrix ждёт быстрый ответ
@@ -129,7 +174,7 @@ app.post("/api/referral/start", async (req, res) => {
     const entityId = Number(req.body?.entity_id || req.body?.entityId);
     if (!entityId) return res.status(400).json({ ok: false, error: "entity_id required" });
 
-    const result = await startConfirmationFlow(config.entityType, entityId);
+    const result = await startConfirmationFlow("deal", entityId);
     res.json(result);
   } catch (err) {
     log("start error", { message: err.message });
@@ -144,11 +189,27 @@ app.get("/confirm", async (req, res) => {
   try {
     const token = String(req.query.token || "");
     const payload = parseConfirmToken(token);
-    const { entityId, entityType, email } = payload;
+    const { entityId, email } = payload;
+    // Всегда deal — старые токены с lead не поддерживаем после смены контура
+    const entityType = "deal";
 
     const entity = await getEntity(entityType, entityId);
+
+    if (!isReferralDeal(entity)) {
+      return res.status(400).send(
+        pageTemplate({
+          title: "Ошибка подтверждения",
+          message: "Эта заявка не относится к реферальной программе.",
+          ok: false,
+        })
+      );
+    }
+
     const currentEmail = extractEmail(entity);
-    if (currentEmail && currentEmail.toLowerCase() !== email.toLowerCase()) {
+    const person = await resolveDealPerson(entity);
+    const liveEmail = currentEmail || person.email;
+
+    if (liveEmail && liveEmail.toLowerCase() !== email.toLowerCase()) {
       return res.status(400).send(
         pageTemplate({
           title: "Ошибка подтверждения",
@@ -168,15 +229,21 @@ app.get("/confirm", async (req, res) => {
       );
     }
 
-    const name = extractName(entity);
-    const code = await resolveParticipantCode(entity);
+    const name = person.name;
+    const code = person.contactId || (await resolveParticipantCode(entity));
     const referralUrl = participantReferralLink(code);
 
     await markReferralParticipant(code, referralUrl);
+    // UF «email подтверждён» + STAGE_ID = Реферальная программа (UC_L2W4L1)
     await markEmailConfirmed(entityType, entityId);
     await sendCodeEmail({ email, name, code, referralUrl });
 
-    log("confirmed", { entityId, contactId: code, referralUrl });
+    log("confirmed", {
+      entityId,
+      contactId: code,
+      referralUrl,
+      stage: config.stageAfterConfirm,
+    });
 
     res.status(200).send(
       pageTemplate({
@@ -200,5 +267,10 @@ app.get("/confirm", async (req, res) => {
 });
 
 app.listen(config.port, () => {
-  log(`listening on :${config.port}`, { publicUrl: config.publicUrl, entityType: config.entityType });
+  log(`listening on :${config.port}`, {
+    publicUrl: config.publicUrl,
+    entityType: "deal",
+    referralTitleMatch: config.referralTitleMatch,
+    stageAfterConfirm: config.stageAfterConfirm,
+  });
 });

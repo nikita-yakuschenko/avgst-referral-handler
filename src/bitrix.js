@@ -20,6 +20,12 @@ export async function getEntity(entityType, entityId) {
   return bitrixCall(methods.get, { id: entityId });
 }
 
+export async function getContact(contactId) {
+  const id = Number(contactId);
+  if (!id) return null;
+  return bitrixCall("crm.contact.get", { id });
+}
+
 export async function markEmailConfirmed(entityType, entityId) {
   if (!config.ufEmailConfirmed) {
     throw new Error("BITRIX_UF_EMAIL_CONFIRMED is not configured");
@@ -58,6 +64,49 @@ export function extractName(entity) {
   return String(entity?.TITLE || "").trim();
 }
 
+export function extractTitle(entity) {
+  return String(entity?.TITLE || "").trim();
+}
+
+/** Только сделки с формы регистрации в реферальной программе */
+export function isReferralDeal(entity) {
+  const needle = String(config.referralTitleMatch || "").trim().toLowerCase();
+  if (!needle) return false;
+  return extractTitle(entity).toLowerCase().includes(needle);
+}
+
+/**
+ * Email/имя для сделки: сначала сделка, иначе контакт.
+ * У crm.deal обычно нет EMAIL — данные на CONTACT_ID.
+ */
+export async function resolveDealPerson(deal) {
+  const fromDeal = {
+    email: extractEmail(deal),
+    name: extractName(deal),
+    contactId: extractContactId(deal),
+  };
+
+  let contact = null;
+  if (fromDeal.contactId) {
+    contact = await getContact(fromDeal.contactId);
+  }
+
+  const email = fromDeal.email || extractEmail(contact) || "";
+  let contactId = fromDeal.contactId;
+
+  if (!contactId && email) {
+    contactId = await findContactIdByEmail(email);
+    if (contactId && !contact) contact = await getContact(contactId);
+  }
+
+  const name =
+    (contact ? extractName(contact) : "") ||
+    (fromDeal.name && fromDeal.name !== extractTitle(deal) ? fromDeal.name : "") ||
+    "";
+
+  return { email, name, contactId: contactId ? String(contactId) : "" };
+}
+
 export function extractContactId(entity) {
   const direct = Number(entity?.CONTACT_ID || entity?.contact_id || 0);
   if (direct > 0) return direct;
@@ -90,9 +139,12 @@ async function findContactIdByEmail(email) {
 
 /** Код участника = ID контакта в Bitrix24 */
 export async function resolveParticipantCode(entity) {
+  const person = await resolveDealPerson(entity);
+  if (person.contactId) return person.contactId;
+
   let contactId = extractContactId(entity);
   if (!contactId) {
-    contactId = await findContactIdByEmail(extractEmail(entity));
+    contactId = await findContactIdByEmail(extractEmail(entity) || person.email);
   }
   if (!contactId) {
     throw new Error("contact_id_not_found");

@@ -10,12 +10,16 @@ export const config = {
   publicUrl: (process.env.PUBLIC_URL || "http://localhost:3000").replace(/\/$/, ""),
   bitrixWebhookUrl: required("BITRIX_WEBHOOK_URL", process.env.BITRIX_WEBHOOK_URL).replace(/\/?$/, "/"),
   bitrixAppToken: process.env.BITRIX_APP_TOKEN || "",
-  entityType: (process.env.BITRIX_ENTITY_TYPE || "lead").toLowerCase(),
+  // Контур только сделки (Tilda → Bitrix deal)
+  entityType: "deal",
+  // Подстрока в TITLE сделки с формы «Реферальная программа»
+  referralTitleMatch: (process.env.REFERRAL_DEAL_TITLE_MATCH || "Реферальная программа").trim(),
   ufEmailConfirmed: process.env.BITRIX_UF_EMAIL_CONFIRMED || "",
   ufReferralParticipant:
     process.env.BITRIX_UF_REFERRAL_PARTICIPANT || "UF_CRM_1787908414223",
   ufReferralLink: process.env.BITRIX_UF_REFERRAL_LINK || "UF_CRM_1787908433785",
-  stageAfterConfirm: process.env.BITRIX_STAGE_AFTER_CONFIRM || "",
+  // Этап сделки после полной регистрации
+  stageAfterConfirm: process.env.BITRIX_STAGE_AFTER_CONFIRM || "UC_L2W4L1",
   tokenSecret: required("TOKEN_SECRET", process.env.TOKEN_SECRET),
   tokenTtlHours: Number(process.env.TOKEN_TTL_HOURS || 72),
   rulesUrl: process.env.RULES_URL || "https://avgst.ru/referral",
