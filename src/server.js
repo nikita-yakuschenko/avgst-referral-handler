@@ -3,6 +3,7 @@ import { config } from "./config.js";
 import {
   extractEmail,
   extractTitle,
+  getContact,
   getEntity,
   isEmailConfirmed,
   isReferralDeal,
@@ -87,14 +88,15 @@ async function startConfirmationFlow(entityType, entityId) {
 
   const person = await resolveDealPerson(entity);
   const { email, name } = person;
+  const contact = person.contactId ? await getContact(person.contactId) : null;
 
   if (!email) {
     log("skip: no email", { entityId, title, contactId: person.contactId || null });
     return { skipped: true, reason: "no_email" };
   }
 
-  if (isEmailConfirmed(entity)) {
-    log("skip: already confirmed", { entityId });
+  if (isEmailConfirmed(contact)) {
+    log("skip: already confirmed", { entityId, contactId: person.contactId || null });
     return { skipped: true, reason: "already_confirmed" };
   }
 
@@ -133,6 +135,11 @@ app.get("/health", (_req, res) => {
  */
 app.post("/webhook/bitrix", async (req, res) => {
   try {
+    log("bitrix webhook: received", {
+      event: req.body?.event || req.body?.EVENT || null,
+      entityId: extractEntityId(req.body) || null,
+    });
+
     if (!verifyBitrixAppToken(req.body)) {
       log("bitrix webhook: invalid app token");
       return res.status(403).json({ ok: false, error: "forbidden" });
@@ -219,7 +226,8 @@ app.get("/confirm", async (req, res) => {
       );
     }
 
-    if (isEmailConfirmed(entity)) {
+    const contact = person.contactId ? await getContact(person.contactId) : null;
+    if (isEmailConfirmed(contact)) {
       return res.status(200).send(
         pageTemplate({
           title: "Email уже подтверждён",
@@ -234,8 +242,8 @@ app.get("/confirm", async (req, res) => {
     const referralUrl = participantReferralLink(code);
 
     await markReferralParticipant(code, referralUrl);
-    // UF «email подтверждён» + STAGE_ID = Реферальная программа (UC_L2W4L1)
-    await markEmailConfirmed(entityType, entityId);
+    // UF «email подтверждён» на контакте + этап сделки UC_L2W4L1
+    await markEmailConfirmed(entityType, entityId, person.contactId);
     await sendCodeEmail({ email, name, code, referralUrl });
 
     log("confirmed", {

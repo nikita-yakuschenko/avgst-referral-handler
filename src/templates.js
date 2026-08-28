@@ -8,7 +8,7 @@ function esc(s) {
 
 // referral-rules/index.html
 const t = {
-  page: "#0e0e0e",
+  page: "#f5f5f5",
   sheet: "#ffffff",
   ink: "#111111",
   soft: "#4a4a4a",

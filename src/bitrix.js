@@ -26,22 +26,31 @@ export async function getContact(contactId) {
   return bitrixCall("crm.contact.get", { id });
 }
 
-export async function markEmailConfirmed(entityType, entityId) {
+/** UF «email подтверждён» висит на контакте, не на сделке */
+export function isEmailConfirmed(entity) {
+  if (!config.ufEmailConfirmed || !entity) return false;
+  const val = entity[config.ufEmailConfirmed];
+  return val === true || val === 1 || val === "1" || val === "Y" || val === "y";
+}
+
+export async function markEmailConfirmed(entityType, entityId, contactId) {
   if (!config.ufEmailConfirmed) {
     throw new Error("BITRIX_UF_EMAIL_CONFIRMED is not configured");
   }
-  const methods = entityMethods(entityType);
-  const fields = { [config.ufEmailConfirmed]: "1" };
-  if (config.stageAfterConfirm) {
-    fields[methods.stageField] = config.stageAfterConfirm;
-  }
-  return bitrixCall(methods.update, { id: entityId, fields });
-}
+  const id = Number(contactId);
+  if (!id) throw new Error("contact_id_required");
 
-export function isEmailConfirmed(entity) {
-  if (!config.ufEmailConfirmed) return false;
-  const val = entity?.[config.ufEmailConfirmed];
-  return val === true || val === 1 || val === "1" || val === "Y" || val === "y";
+  await bitrixCall("crm.contact.update", {
+    id,
+    fields: { [config.ufEmailConfirmed]: "1" },
+  });
+
+  if (config.stageAfterConfirm && entityType === "deal") {
+    await bitrixCall("crm.deal.update", {
+      id: entityId,
+      fields: { STAGE_ID: config.stageAfterConfirm },
+    });
+  }
 }
 
 export function extractEmail(entity) {
