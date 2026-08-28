@@ -16,6 +16,7 @@ export const config = {
   tokenSecret: required("TOKEN_SECRET", process.env.TOKEN_SECRET),
   tokenTtlHours: Number(process.env.TOKEN_TTL_HOURS || 72),
   rulesUrl: process.env.RULES_URL || "https://avgst.ru/referral",
+  referralLinkTemplate: process.env.REFERRAL_LINK_TEMPLATE || "https://avgst.ru/?ref={code}",
   smtp: {
     host: required("SMTP_HOST", process.env.SMTP_HOST),
     port: Number(process.env.SMTP_PORT || 587),

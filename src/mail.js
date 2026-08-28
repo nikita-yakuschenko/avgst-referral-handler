@@ -27,7 +27,12 @@ async function sendMail({ to, subject, html, text }) {
 }
 
 export async function sendConfirmEmail({ email, name, confirmUrlValue, expiresHours }) {
-  const { html, text } = confirmTemplate({ name, confirmUrl: confirmUrlValue, expiresHours, rulesUrl: config.rulesUrl });
+  const { html, text } = confirmTemplate({
+    name,
+    confirmUrl: confirmUrlValue,
+    expiresHours,
+    rulesUrl: config.rulesUrl,
+  });
   await sendMail({
     to: email,
     subject: "Подтвердите email — реферальная программа Авангард Строй",
@@ -36,8 +41,13 @@ export async function sendConfirmEmail({ email, name, confirmUrlValue, expiresHo
   });
 }
 
-export async function sendCodeEmail({ email, name, code, rulesUrl }) {
-  const { html, text } = codeTemplate({ name, code, rulesUrl: rulesUrl || config.rulesUrl });
+export async function sendCodeEmail({ email, name, code, referralUrl, rulesUrl }) {
+  const { html, text } = codeTemplate({
+    name,
+    code,
+    referralUrl,
+    rulesUrl: rulesUrl || config.rulesUrl,
+  });
   await sendMail({
     to: email,
     subject: "Ваш код участника реферальной программы — Авангард Строй",

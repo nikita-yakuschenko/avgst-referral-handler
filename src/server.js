@@ -6,7 +6,8 @@ import {
   getEntity,
   isEmailConfirmed,
   markEmailConfirmed,
-  participantCode,
+  resolveParticipantCode,
+  participantReferralLink,
 } from "./bitrix.js";
 import { sendCodeEmail, sendConfirmEmail } from "./mail.js";
 import { confirmUrl, createConfirmToken, parseConfirmToken } from "./token.js";
@@ -169,10 +170,11 @@ app.get("/confirm", async (req, res) => {
     await markEmailConfirmed(entityType, entityId);
 
     const name = extractName(entity);
-    const code = participantCode(entityType, entityId);
-    await sendCodeEmail({ email, name, code });
+    const code = await resolveParticipantCode(entity);
+    const referralUrl = participantReferralLink(code);
+    await sendCodeEmail({ email, name, code, referralUrl });
 
-    log("confirmed", { entityId });
+    log("confirmed", { entityId, contactId: code });
 
     res.status(200).send(
       pageTemplate({
@@ -187,7 +189,9 @@ app.get("/confirm", async (req, res) => {
         ? "Ссылка устарела. Запросите новое письмо через регистрацию или поддержку."
         : err.message === "invalid_token"
           ? "Некорректная ссылка подтверждения."
-          : "Не удалось подтвердить email. Попробуйте позже.";
+          : err.message === "contact_id_not_found"
+            ? "Не удалось определить код участника. Обратитесь в поддержку."
+            : "Не удалось подтвердить email. Попробуйте позже.";
     log("confirm error", { message: err.message });
     res.status(400).send(pageTemplate({ title: "Не удалось подтвердить", message: msg, ok: false }));
   }

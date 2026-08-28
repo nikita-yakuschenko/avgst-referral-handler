@@ -58,8 +58,54 @@ export function extractName(entity) {
   return String(entity?.TITLE || "").trim();
 }
 
-export function participantCode(entityType, entityId) {
-  return String(entityId);
+export function extractContactId(entity) {
+  const direct = Number(entity?.CONTACT_ID || entity?.contact_id || 0);
+  if (direct > 0) return direct;
+
+  const ids = entity?.CONTACT_IDS;
+  if (Array.isArray(ids)) {
+    for (const item of ids) {
+      const id = Number(typeof item === "object" ? item?.CONTACT_ID || item?.ID || item?.id : item);
+      if (id > 0) return id;
+    }
+  }
+
+  return 0;
+}
+
+async function findContactIdByEmail(email) {
+  const normalized = String(email || "").trim();
+  if (!normalized) return 0;
+
+  const result = await bitrixCall("crm.duplicate.findbycomm", {
+    entity_type: "CONTACT",
+    type: "EMAIL",
+    values: [normalized],
+  });
+
+  const ids = result?.CONTACT;
+  if (!Array.isArray(ids) || !ids.length) return 0;
+  return Number(ids[0] || 0);
+}
+
+/** Код участника = ID контакта в Bitrix24 */
+export async function resolveParticipantCode(entity) {
+  let contactId = extractContactId(entity);
+  if (!contactId) {
+    contactId = await findContactIdByEmail(extractEmail(entity));
+  }
+  if (!contactId) {
+    throw new Error("contact_id_not_found");
+  }
+  return String(contactId);
+}
+
+export function participantReferralLink(code) {
+  const { referralLinkTemplate } = config;
+  if (!referralLinkTemplate.includes("{code}")) {
+    throw new Error("REFERRAL_LINK_TEMPLATE must contain {code}");
+  }
+  return referralLinkTemplate.replaceAll("{code}", encodeURIComponent(String(code)));
 }
 
 export { bitrixCall };
