@@ -6,6 +6,7 @@ import {
   getEntity,
   isEmailConfirmed,
   markEmailConfirmed,
+  markReferralParticipant,
   resolveParticipantCode,
   participantReferralLink,
 } from "./bitrix.js";
@@ -167,14 +168,15 @@ app.get("/confirm", async (req, res) => {
       );
     }
 
-    await markEmailConfirmed(entityType, entityId);
-
     const name = extractName(entity);
     const code = await resolveParticipantCode(entity);
     const referralUrl = participantReferralLink(code);
+
+    await markReferralParticipant(code, referralUrl);
+    await markEmailConfirmed(entityType, entityId);
     await sendCodeEmail({ email, name, code, referralUrl });
 
-    log("confirmed", { entityId, contactId: code });
+    log("confirmed", { entityId, contactId: code, referralUrl });
 
     res.status(200).send(
       pageTemplate({

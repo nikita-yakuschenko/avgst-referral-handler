@@ -108,4 +108,21 @@ export function participantReferralLink(code) {
   return referralLinkTemplate.replaceAll("{code}", encodeURIComponent(String(code)));
 }
 
+/** Отметить контакт как участника реферальной программы и записать реферальную ссылку */
+export async function markReferralParticipant(contactId, referralUrl) {
+  const id = Number(contactId);
+  if (!id) throw new Error("contact_id_required");
+
+  const fields = {};
+  if (config.ufReferralParticipant) {
+    fields[config.ufReferralParticipant] = "1";
+  }
+  if (config.ufReferralLink && referralUrl) {
+    fields[config.ufReferralLink] = referralUrl;
+  }
+  if (!Object.keys(fields).length) return;
+
+  return bitrixCall("crm.contact.update", { id, fields });
+}
+
 export { bitrixCall };

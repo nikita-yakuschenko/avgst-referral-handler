@@ -12,6 +12,9 @@ export const config = {
   bitrixAppToken: process.env.BITRIX_APP_TOKEN || "",
   entityType: (process.env.BITRIX_ENTITY_TYPE || "lead").toLowerCase(),
   ufEmailConfirmed: process.env.BITRIX_UF_EMAIL_CONFIRMED || "",
+  ufReferralParticipant:
+    process.env.BITRIX_UF_REFERRAL_PARTICIPANT || "UF_CRM_1787908414223",
+  ufReferralLink: process.env.BITRIX_UF_REFERRAL_LINK || "UF_CRM_1787908433785",
   stageAfterConfirm: process.env.BITRIX_STAGE_AFTER_CONFIRM || "",
   tokenSecret: required("TOKEN_SECRET", process.env.TOKEN_SECRET),
   tokenTtlHours: Number(process.env.TOKEN_TTL_HOURS || 72),
