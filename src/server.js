@@ -13,17 +13,31 @@ import {
   resolveParticipantCode,
   participantReferralLink,
 } from "./bitrix.js";
-import { sendCodeEmail, sendConfirmEmail } from "./mail.js";
+import { sendCodeEmail, sendConfirmEmail, verifySmtp } from "./mail.js";
 import { confirmUrl, createConfirmToken, parseConfirmToken } from "./token.js";
 import { pageTemplate } from "./templates.js";
+import { logger, maskEmail } from "./logger.js";
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
+app.use((req, res, next) => {
+  const start = Date.now();
+  logger.debug("http: request", { method: req.method, path: req.path, ip: req.ip });
+  res.on("finish", () => {
+    logger.debug("http: response", {
+      method: req.method,
+      path: req.path,
+      status: res.statusCode,
+      ms: Date.now() - start,
+    });
+  });
+  next();
+});
+
 function log(msg, extra) {
-  const line = extra ? `${msg} ${JSON.stringify(extra)}` : msg;
-  console.log(`[referral] ${line}`);
+  logger.info(msg, extra);
 }
 
 function verifyBitrixAppToken(body) {
@@ -109,12 +123,12 @@ async function startConfirmationFlow(entityType, entityId) {
     expiresHours: config.tokenTtlHours,
   });
 
-  log("confirm email sent", {
-    entityId,
-    title,
-    contactId: person.contactId || null,
-    email: email.replace(/(.{2}).+(@.+)/, "$1***$2"),
-  });
+    log("confirm email sent", {
+      entityId,
+      title,
+      contactId: person.contactId || null,
+      email: maskEmail(email),
+    });
   return { ok: true, entityId, emailSent: true };
 }
 
@@ -123,6 +137,7 @@ app.get("/health", (_req, res) => {
     ok: true,
     service: "avgst-referral-handler",
     entityType: "deal",
+    logLevel: config.logLevel,
     referralTitleMatch: config.referralTitleMatch,
     stageAfterConfirm: config.stageAfterConfirm,
   });
@@ -274,11 +289,26 @@ app.get("/confirm", async (req, res) => {
   }
 });
 
-app.listen(config.port, () => {
-  log(`listening on :${config.port}`, {
-    publicUrl: config.publicUrl,
-    entityType: "deal",
-    referralTitleMatch: config.referralTitleMatch,
-    stageAfterConfirm: config.stageAfterConfirm,
+async function boot() {
+  if (config.logLevel === "debug") {
+    try {
+      await verifySmtp();
+    } catch (err) {
+      logger.error("smtp: verify failed on startup", { message: err.message });
+    }
+  }
+
+  app.listen(config.port, () => {
+    log(`listening on :${config.port}`, {
+      publicUrl: config.publicUrl,
+      entityType: "deal",
+      logLevel: config.logLevel,
+      referralTitleMatch: config.referralTitleMatch,
+      stageAfterConfirm: config.stageAfterConfirm,
+      smtpFrom: config.smtp.from,
+      smtpUser: config.smtp.user ? maskEmail(config.smtp.user) : null,
+    });
   });
-});
+}
+
+boot();

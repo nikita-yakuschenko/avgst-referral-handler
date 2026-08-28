@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { config } from "./config.js";
+import { logger, maskEmail } from "./logger.js";
 import { confirmTemplate, codeTemplate } from "./templates.js";
 
 let transporter;
@@ -11,19 +12,75 @@ function getTransporter() {
       port: config.smtp.port,
       secure: config.smtp.secure,
       auth: config.smtp.user ? { user: config.smtp.user, pass: config.smtp.pass } : undefined,
+      logger: config.logLevel === "debug",
+      debug: config.logLevel === "debug",
     });
   }
   return transporter;
 }
 
-async function sendMail({ to, subject, html, text }) {
-  await getTransporter().sendMail({
-    from: config.smtp.from,
-    to,
+async function sendMail({ to, subject, html, text, kind }) {
+  const from = config.smtp.from;
+  const authUser = config.smtp.user || "";
+  const fromDomain = String(from).split("@")[1] || "";
+  const authDomain = authUser.split("@")[1] || "";
+
+  logger.debug("smtp: sending", {
+    kind: kind || "mail",
+    to: maskEmail(to),
+    from,
     subject,
-    html,
-    text,
+    host: config.smtp.host,
+    port: config.smtp.port,
+    secure: config.smtp.secure,
+    authUser: authUser ? maskEmail(authUser) : null,
+    fromAuthDomainMatch: !authDomain || !fromDomain || fromDomain === authDomain,
   });
+
+  if (authUser && fromDomain && authDomain && fromDomain !== authDomain) {
+    logger.warn("smtp: FROM domain differs from SMTP_USER — Gmail may reject or spam-folder", {
+      from,
+      authUser: maskEmail(authUser),
+    });
+  }
+
+  if (authUser && from !== authUser && !String(from).includes(authUser)) {
+    logger.warn("smtp: SMTP_FROM is not the authenticated mailbox — use alias in Yandex or set SMTP_FROM=SMTP_USER", {
+      from,
+      authUser: maskEmail(authUser),
+    });
+  }
+
+  try {
+    const info = await getTransporter().sendMail({
+      from,
+      to,
+      replyTo: authUser || from,
+      subject,
+      html,
+      text,
+    });
+
+    logger.info("smtp: sent", {
+      kind: kind || "mail",
+      to: maskEmail(to),
+      messageId: info.messageId || null,
+      response: info.response || null,
+      accepted: info.accepted || [],
+      rejected: info.rejected || [],
+    });
+    return info;
+  } catch (err) {
+    logger.error("smtp: failed", {
+      kind: kind || "mail",
+      to: maskEmail(to),
+      code: err.code || null,
+      command: err.command || null,
+      response: err.response || null,
+      message: err.message,
+    });
+    throw err;
+  }
 }
 
 export async function sendConfirmEmail({ email, name, confirmUrlValue, expiresHours }) {
@@ -38,6 +95,7 @@ export async function sendConfirmEmail({ email, name, confirmUrlValue, expiresHo
     subject: "Подтвердите email — реферальная программа Авангард Строй",
     html,
     text,
+    kind: "confirm",
   });
 }
 
@@ -53,5 +111,18 @@ export async function sendCodeEmail({ email, name, code, referralUrl, rulesUrl }
     subject: "Ваш код участника реферальной программы — Авангард Строй",
     html,
     text,
+    kind: "code",
   });
+}
+
+/** Проверка SMTP при старте (debug) */
+export async function verifySmtp() {
+  logger.debug("smtp: verify start", {
+    host: config.smtp.host,
+    port: config.smtp.port,
+    from: config.smtp.from,
+    user: config.smtp.user ? maskEmail(config.smtp.user) : null,
+  });
+  await getTransporter().verify();
+  logger.info("smtp: verify ok");
 }

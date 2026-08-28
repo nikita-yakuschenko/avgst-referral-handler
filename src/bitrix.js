@@ -1,7 +1,9 @@
 import { config, entityMethods } from "./config.js";
+import { logger } from "./logger.js";
 
 async function bitrixCall(method, params = {}) {
   const url = `${config.bitrixWebhookUrl}${method}.json`;
+  logger.debug("bitrix: call", { method, params: summarizeParams(params) });
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -10,9 +12,20 @@ async function bitrixCall(method, params = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok || data.error) {
     const msg = data.error_description || data.error || res.statusText;
+    logger.error("bitrix: error", { method, error: msg });
     throw new Error(`Bitrix ${method}: ${msg}`);
   }
+  logger.debug("bitrix: ok", { method, hasResult: data.result !== undefined });
   return data.result;
+}
+
+function summarizeParams(params) {
+  if (!params || typeof params !== "object") return params;
+  const out = { ...params };
+  if (out.fields && typeof out.fields === "object") {
+    out.fields = Object.keys(out.fields);
+  }
+  return out;
 }
 
 export async function getEntity(entityType, entityId) {
