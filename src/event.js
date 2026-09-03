@@ -59,7 +59,7 @@ export function googleCalendarUrl() {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-/** Содержимое .ics для вложения. */
+/** Содержимое .ics — отдаётся по ссылке /event.ics. */
 export async function buildIcs({ uid }) {
   const e = config.event;
   const raw = await template("event.ics");
@@ -76,7 +76,7 @@ export async function buildIcs({ uid }) {
 export async function logoAttachment() {
   return {
     filename: "logo.png",
-    content: await readFile(path.join(assetDir, "logo-email@2x.png")),
+    content: await readFile(path.join(assetDir, "logo-email-dark@2x.png")),
     cid: "ags-logo",
     contentDisposition: "inline",
   };
@@ -147,7 +147,7 @@ export async function renderProgramme({ name }) {
     e.address,
     `Ориентир: ${e.landmark}`,
     "",
-    "Программа дня приложена к письму, событие — во вложении .ics.",
+    `Событие для календаря: ${config.publicUrl}/event.ics`,
     `Маршрут: ${e.routeUrl}`,
   ].join("\n");
   return { html, text };

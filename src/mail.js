@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 import { config } from "./config.js";
 import { logger, maskEmail } from "./logger.js";
 import { confirmTemplate, codeTemplate } from "./templates.js";
-import { buildIcs, logoAttachment, renderConfirm, renderProgramme, renderReminder } from "./event.js";
+import { logoAttachment, renderConfirm, renderProgramme, renderReminder } from "./event.js";
 
 let transporter;
 
@@ -155,7 +155,7 @@ export async function sendEventReminderEmail({ email, name }) {
   });
 }
 
-export async function sendEventProgrammeEmail({ email, name, entityId }) {
+export async function sendEventProgrammeEmail({ email, name }) {
   const { html, text } = await renderProgramme({ name });
   await sendMail({
     to: email,
@@ -163,13 +163,7 @@ export async function sendEventProgrammeEmail({ email, name, entityId }) {
     html,
     text,
     kind: "event_programme",
-    attachments: [
-      await logoAttachment(),
-      {
-        filename: "avangard-open-day.ics",
-        content: await buildIcs({ uid: `open-day-${entityId}` }),
-        contentType: "text/calendar; charset=utf-8; method=PUBLISH",
-      },
-    ],
+    // Событие отдаётся ссылкой на /event.ics, а не вложением.
+    attachments: [await logoAttachment()],
   });
 }
