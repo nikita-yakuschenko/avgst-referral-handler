@@ -204,4 +204,24 @@ export async function markReferralParticipant(contactId, referralUrl) {
   return bitrixCall("crm.contact.update", { id, fields });
 }
 
+/**
+ * Все сделки на стадии. bitrixCall отдаёт только result без next,
+ * поэтому листаем по start, пока страница приходит полной.
+ */
+export async function listDealsByStage(stageId, pageSize = 50) {
+  const deals = [];
+  for (let start = 0; ; start += pageSize) {
+    const page = await bitrixCall("crm.deal.list", {
+      filter: { STAGE_ID: stageId },
+      select: ["ID", "TITLE", "CONTACT_ID"],
+      start,
+    });
+    if (!Array.isArray(page) || page.length === 0) break;
+    deals.push(...page);
+    if (page.length < pageSize) break;
+    if (deals.length > 5000) break; // предохранитель от бесконечного цикла
+  }
+  return deals;
+}
+
 export { bitrixCall };

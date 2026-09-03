@@ -7,6 +7,7 @@ import {
   getEntity,
   isEmailConfirmed,
   isReferralDeal,
+  listDealsByStage,
   markEmailConfirmed,
   markReferralParticipant,
   resolveDealPerson,
@@ -18,6 +19,7 @@ import {
   sendConfirmEmail,
   sendEventConfirmEmail,
   sendEventProgrammeEmail,
+  sendEventReminderEmail,
   verifySmtp,
 } from "./mail.js";
 import { buildIcs, isEventDeal } from "./event.js";
@@ -240,6 +242,55 @@ app.post("/api/referral/start", async (req, res) => {
     res.json(result);
   } catch (err) {
     log("start error", { message: err.message });
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+/**
+ * Напоминание накануне — тем, кто подтвердил почту и лежит на стадии
+ * мероприятия. Запускается извне (планировщик Dokploy) в нужный день.
+ *
+ * POST /api/event/remind        { "dry_run": true }  — только посчитать
+ * Header: X-Webhook-Secret: TOKEN_SECRET
+ */
+app.post("/api/event/remind", async (req, res) => {
+  try {
+    const secret = req.get("X-Webhook-Secret") || "";
+    if (secret !== config.tokenSecret) {
+      return res.status(403).json({ ok: false, error: "forbidden" });
+    }
+    const dryRun = req.body?.dry_run === true || req.body?.dryRun === true;
+    const deals = await listDealsByStage(config.event.stageAfterConfirm);
+
+    const seen = new Set();
+    const report = { total: deals.length, sent: 0, skipped: 0, failed: 0, dryRun };
+
+    for (const deal of deals) {
+      try {
+        const person = await resolveDealPerson(deal);
+        const email = person.email;
+        // Один адрес — одно письмо, даже если сделок несколько.
+        if (!email || seen.has(email.toLowerCase())) {
+          report.skipped++;
+          continue;
+        }
+        seen.add(email.toLowerCase());
+        if (dryRun) {
+          report.sent++;
+          continue;
+        }
+        await sendEventReminderEmail({ email, name: person.name });
+        report.sent++;
+      } catch (err) {
+        report.failed++;
+        log("reminder failed", { dealId: deal.ID, message: err.message });
+      }
+    }
+
+    log("reminders finished", report);
+    res.json({ ok: true, ...report });
+  } catch (err) {
+    log("reminder error", { message: err.message });
     res.status(500).json({ ok: false, error: err.message });
   }
 });

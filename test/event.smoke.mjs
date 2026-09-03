@@ -6,7 +6,7 @@ process.env.TOKEN_SECRET = 'smoke-secret';
 process.env.SMTP_HOST = 'smtp.example.invalid';
 process.env.SMTP_FROM = 'noreply@example.invalid';
 process.env.PUBLIC_URL = 'https://handler.example.invalid';
-process.env.EVENT_PHONE = '+7 (900) 000-00-00';
+// EVENT_PHONE намеренно не задаём: проверяем значение по умолчанию из config.
 process.env.EVENT_UNSUBSCRIBE_URL = 'https://avgst.ru/unsubscribe';
 
 const ev = await import('../src/event.js');
@@ -43,6 +43,13 @@ check('письмо 2 не содержит реферальных формул�
   !/реферал/i.test(prog.html));
 
 // 4. Календарь
+// 3b. Напоминание
+const rem = await ev.renderReminder({name: 'Иван'});
+check('в письме 3 не осталось плейсхолдеров',
+  !/{{w+}}/.test(rem.html), (rem.html.match(/{{w+}}/g) || []).join(','));
+check('письмо 3 содержит телефон', rem.html.includes('831 266-66-45'));
+check('письмо 3 содержит кнопку маршрута', /Построить маршрут/.test(rem.html));
+
 const ics = await ev.buildIcs({uid: 'smoke-1'});
 check('.ics с CRLF', ics.includes('\r\n'));
 check('.ics закрывает плейсхолдеры', !/\{\{\w+\}\}/.test(ics), (ics.match(/\{\{\w+\}\}/g) || []).join(','));

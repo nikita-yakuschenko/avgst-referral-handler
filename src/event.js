@@ -108,6 +108,29 @@ export async function renderConfirm({ name, confirmUrl }) {
   return { html, text };
 }
 
+export async function renderReminder({ name }) {
+  const e = config.event;
+  const html = fill(await template("event-reminder.html"), {
+    logo_url: LOGO_SRC,
+    name: name ? `${name},` : "Здравствуйте,",
+    event_time: e.timeLabel,
+    route_url: e.routeUrl,
+    phone: e.phone,
+    unsubscribe_url: e.unsubscribeUrl,
+  });
+  const text = [
+    `${name ? name + "," : "Здравствуйте,"} напоминаем: День открытых дверей «Авангард Строй» завтра.`,
+    "",
+    `${e.dateLabel}, ${e.timeLabel}`,
+    e.address,
+    `Ориентир: ${e.landmark}`,
+    "",
+    `Маршрут: ${e.routeUrl}`,
+    `Не сможете приехать — позвоните: ${e.phone}`,
+  ].join("\n");
+  return { html, text };
+}
+
 export async function renderProgramme({ name }) {
   const e = config.event;
   const html = fill(await template("event-programme.html"), {

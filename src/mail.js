@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 import { config } from "./config.js";
 import { logger, maskEmail } from "./logger.js";
 import { confirmTemplate, codeTemplate } from "./templates.js";
-import { buildIcs, logoAttachment, renderConfirm, renderProgramme } from "./event.js";
+import { buildIcs, logoAttachment, renderConfirm, renderProgramme, renderReminder } from "./event.js";
 
 let transporter;
 
@@ -139,6 +139,18 @@ export async function sendEventConfirmEmail({ email, name, confirmUrlValue }) {
     html,
     text,
     kind: "event_confirm",
+    attachments: [await logoAttachment()],
+  });
+}
+
+export async function sendEventReminderEmail({ email, name }) {
+  const { html, text } = await renderReminder({ name });
+  await sendMail({
+    to: email,
+    subject: config.event.reminderSubject,
+    html,
+    text,
+    kind: "event_reminder",
     attachments: [await logoAttachment()],
   });
 }
