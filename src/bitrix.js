@@ -46,7 +46,11 @@ export function isEmailConfirmed(entity) {
   return val === true || val === 1 || val === "1" || val === "Y" || val === "y";
 }
 
-export async function markEmailConfirmed(entityType, entityId, contactId) {
+/**
+ * @param {string} [stageOverride] стадия для ветки мероприятия. Без неё
+ *   используется реферальная config.stageAfterConfirm — поведение прежнее.
+ */
+export async function markEmailConfirmed(entityType, entityId, contactId, stageOverride) {
   if (!config.ufEmailConfirmed) {
     throw new Error("BITRIX_UF_EMAIL_CONFIRMED is not configured");
   }
@@ -58,10 +62,11 @@ export async function markEmailConfirmed(entityType, entityId, contactId) {
     fields: { [config.ufEmailConfirmed]: "1" },
   });
 
-  if (config.stageAfterConfirm && entityType === "deal") {
+  const stage = stageOverride || config.stageAfterConfirm;
+  if (stage && entityType === "deal") {
     await bitrixCall("crm.deal.update", {
       id: entityId,
-      fields: { STAGE_ID: config.stageAfterConfirm },
+      fields: { STAGE_ID: stage },
     });
   }
 }

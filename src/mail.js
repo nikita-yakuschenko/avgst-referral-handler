@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import { config } from "./config.js";
 import { logger, maskEmail } from "./logger.js";
 import { confirmTemplate, codeTemplate } from "./templates.js";
+import { buildIcs, logoAttachment, renderConfirm, renderProgramme } from "./event.js";
 
 let transporter;
 
@@ -19,7 +20,7 @@ function getTransporter() {
   return transporter;
 }
 
-async function sendMail({ to, subject, html, text, kind }) {
+async function sendMail({ to, subject, html, text, kind, attachments }) {
   const from = config.smtp.from;
   const authUser = config.smtp.user || "";
   const fromDomain = String(from).split("@")[1] || "";
@@ -59,6 +60,7 @@ async function sendMail({ to, subject, html, text, kind }) {
       subject,
       html,
       text,
+      attachments,
     });
 
     logger.info("smtp: sent", {
@@ -125,4 +127,37 @@ export async function verifySmtp() {
   });
   await getTransporter().verify();
   logger.info("smtp: verify ok");
+}
+
+/* ---------- Ветка «День открытых дверей» ---------- */
+
+export async function sendEventConfirmEmail({ email, name, confirmUrlValue }) {
+  const { html, text } = await renderConfirm({ name, confirmUrl: confirmUrlValue });
+  await sendMail({
+    to: email,
+    subject: config.event.confirmSubject,
+    html,
+    text,
+    kind: "event_confirm",
+    attachments: [await logoAttachment()],
+  });
+}
+
+export async function sendEventProgrammeEmail({ email, name, entityId }) {
+  const { html, text } = await renderProgramme({ name });
+  await sendMail({
+    to: email,
+    subject: config.event.programmeSubject,
+    html,
+    text,
+    kind: "event_programme",
+    attachments: [
+      await logoAttachment(),
+      {
+        filename: "avangard-open-day.ics",
+        content: await buildIcs({ uid: `open-day-${entityId}` }),
+        contentType: "text/calendar; charset=utf-8; method=PUBLISH",
+      },
+    ],
+  });
 }

@@ -1,0 +1,213 @@
+<!-- ============================================================================
+  ПИСЬМО 2 — ПРОГРАММА МЕРОПРИЯТИЯ
+  Отправляется ПОСЛЕ подтверждения почты, в тот же момент, когда сделка
+  переводится в стадию «Регистрация на мероприятия».
+
+  Палитра и шрифты наследуют тёмную тему лендинга — см. email/_shared.md.
+
+  Плейсхолдеры:
+    {{name}} {{event_time}} {{google_cal_url}} {{ics_url}} {{route_url}}
+    {{phone}} {{unsubscribe_url}}
+
+  КАЛЕНДАРЬ: event.ics ПРИКРЕПЛЯЕТСЯ к письму — Gmail и Apple Mail тогда сами
+  показывают карточку события. Кнопки ниже — запасной путь. Живой виджет в
+  письме невозможен: почтовые клиенты не исполняют скрипты.
+============================================================================ -->
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>Программа дня — День открытых дверей «Авангард Строй»</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
+  body { margin:0; padding:0; }
+  a { color:#FCC90C; }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#050505;">
+
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+  Вы в списке. Программа дня и событие для календаря.
+  &#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;
+</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#050505;">
+<tr><td align="center" style="padding:24px 12px;">
+
+  <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background:#0A0A0A;">
+
+    <tr><td style="padding:30px 32px 0;">
+      <img src="{{logo_url}}" width="160" height="45" alt="Авангард Строй" style="display:block;width:160px;height:45px;border:0;outline:none;text-decoration:none;">
+    </td></tr>
+
+    <tr><td style="padding:22px 32px 0;">
+      <div style="height:1px;background:#26261F;line-height:1px;font-size:0;">&nbsp;</div>
+    </td></tr>
+
+    <tr><td style="padding:30px 32px 0;">
+      <h1 style="margin:0;font-family:'Unbounded','Arial Black','Helvetica Neue',Arial,sans-serif;font-size:27px;line-height:1.2;color:#EBEAE4;font-weight:bold;letter-spacing:-.01em;">
+        Вы в списке
+      </h1>
+    </td></tr>
+
+    <tr><td style="padding:16px 32px 0;font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:16px;line-height:1.62;color:#A3A49B;">
+      {{name}}, почта подтверждена, место закреплено. Ниже — программа дня. Накануне пришлём напоминание.
+    </td></tr>
+
+    <!-- Дата: жёлтая плашка, тот же сигнальный цвет, что на лендинге -->
+    <tr><td style="padding:26px 32px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FCC90C" style="background:#FCC90C;">
+        <tr><td style="padding:20px 22px;font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;">
+          <div style="font-family:'Unbounded','Arial Black','Helvetica Neue',Arial,sans-serif;font-size:20px;font-weight:bold;color:#0A0A0A;line-height:1.28;letter-spacing:-.01em;">суббота, 12 сентября 2026</div>
+          <div style="font-size:15px;color:#2A2408;line-height:1.5;padding-top:6px;">
+            {{event_time}} &nbsp;·&nbsp; ул.&nbsp;Зайцева,&nbsp;31,&nbsp;корпус&nbsp;1
+          </div>
+        </td></tr>
+      </table>
+    </td></tr>
+
+    <tr><td style="padding:22px 32px 0;font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:13px;line-height:1.6;color:#8A8B82;">
+      Событие приложено к письму файлом — Gmail и Apple&nbsp;Mail предложат добавить его сами. Если нет:
+    </td></tr>
+
+    <tr><td style="padding:14px 32px 0;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding:0 8px 8px 0;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr><td align="center" bgcolor="#FCC90C" style="border-radius:4px;">
+                <a href="{{google_cal_url}}"
+                   style="display:inline-block;padding:13px 22px;font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:14px;font-weight:bold;color:#0A0A0A;text-decoration:none;border-radius:4px;">
+                  Google Календарь
+                </a>
+              </td></tr>
+            </table>
+          </td>
+          <td style="padding:0 0 8px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr><td align="center" style="border:1px solid #3A3A31;border-radius:4px;">
+                <a href="{{ics_url}}"
+                   style="display:inline-block;padding:12px 22px;font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:14px;font-weight:bold;color:#EBEAE4;text-decoration:none;border-radius:4px;">
+                  Apple / Outlook (.ics)
+                </a>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <tr><td style="padding:28px 32px 0;">
+      <div style="height:1px;background:#26261F;line-height:1px;font-size:0;">&nbsp;</div>
+    </td></tr>
+
+    <tr><td style="padding:26px 32px 0;">
+      <h2 style="margin:0;font-family:'Unbounded','Arial Black','Helvetica Neue',Arial,sans-serif;font-size:19px;line-height:1.3;color:#EBEAE4;font-weight:bold;letter-spacing:-.01em;">Программа дня</h2>
+    </td></tr>
+
+    <tr><td style="padding:16px 32px 0;font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:15px;line-height:1.55;">
+
+        <tr>
+          <td width="36" valign="top" style="padding:0 12px 14px 0;color:#FCC90C;font-weight:bold;font-size:14px;font-family:'Unbounded','Arial Black',Arial,sans-serif;">01</td>
+          <td style="padding:0 0 14px;color:#A3A49B;">
+            <b style="color:#EBEAE4;">Встреча гостей</b><br>Знакомство и инструктаж.
+          </td>
+          <td width="76" valign="top" align="right" style="padding:0 0 14px;color:#8A8B82;font-size:13px;white-space:nowrap;">10 мин</td>
+        </tr>
+        <tr><td colspan="3" style="padding:0 0 14px;"><div style="height:1px;background:#1C1C16;line-height:1px;font-size:0;">&nbsp;</div></td></tr>
+        <tr>
+          <td width="36" valign="top" style="padding:0 12px 14px 0;color:#FCC90C;font-weight:bold;font-size:14px;font-family:'Unbounded','Arial Black',Arial,sans-serif;">02</td>
+          <td style="padding:0 0 14px;color:#A3A49B;">
+            <b style="color:#EBEAE4;">Экскурсия по цехам</b><br>От отбора материалов до готового дома.
+          </td>
+          <td width="76" valign="top" align="right" style="padding:0 0 14px;color:#8A8B82;font-size:13px;white-space:nowrap;">45 мин</td>
+        </tr>
+        <tr><td colspan="3" style="padding:0 0 14px;"><div style="height:1px;background:#1C1C16;line-height:1px;font-size:0;">&nbsp;</div></td></tr>
+        <tr>
+          <td width="36" valign="top" style="padding:0 12px 14px 0;color:#FCC90C;font-weight:bold;font-size:14px;font-family:'Unbounded','Arial Black',Arial,sans-serif;">03</td>
+          <td style="padding:0 0 14px;color:#A3A49B;">
+            <b style="color:#EBEAE4;">Трансфер на выставочную площадку</b><br>Переезд между площадками.
+          </td>
+          <td width="76" valign="top" align="right" style="padding:0 0 14px;color:#8A8B82;font-size:13px;white-space:nowrap;">15 мин</td>
+        </tr>
+        <tr><td colspan="3" style="padding:0 0 14px;"><div style="height:1px;background:#1C1C16;line-height:1px;font-size:0;">&nbsp;</div></td></tr>
+        <tr>
+          <td width="36" valign="top" style="padding:0 12px 14px 0;color:#FCC90C;font-weight:bold;font-size:14px;font-family:'Unbounded','Arial Black',Arial,sans-serif;">04</td>
+          <td style="padding:0 0 14px;color:#A3A49B;">
+            <b style="color:#EBEAE4;">Кофе-брейк</b><br>Неформальное общение с экспертами.
+          </td>
+          <td width="76" valign="top" align="right" style="padding:0 0 14px;color:#8A8B82;font-size:13px;white-space:nowrap;">15 мин</td>
+        </tr>
+        <tr><td colspan="3" style="padding:0 0 14px;"><div style="height:1px;background:#1C1C16;line-height:1px;font-size:0;">&nbsp;</div></td></tr>
+        <tr>
+          <td width="36" valign="top" style="padding:0 12px 14px 0;color:#FCC90C;font-weight:bold;font-size:14px;font-family:'Unbounded','Arial Black',Arial,sans-serif;">05</td>
+          <td style="padding:0 0 14px;color:#A3A49B;">
+            <b style="color:#EBEAE4;">Прогулка по будущему дому</b><br>Почувствуйте реальные размеры и сравните планировочные решения.
+          </td>
+          <td width="76" valign="top" align="right" style="padding:0 0 14px;color:#8A8B82;font-size:13px;white-space:nowrap;">30 мин</td>
+        </tr>
+        <tr><td colspan="3" style="padding:0 0 14px;"><div style="height:1px;background:#1C1C16;line-height:1px;font-size:0;">&nbsp;</div></td></tr>
+        <tr>
+          <td width="36" valign="top" style="padding:0 12px 14px 0;color:#FCC90C;font-weight:bold;font-size:14px;font-family:'Unbounded','Arial Black',Arial,sans-serif;">06</td>
+          <td style="padding:0 0 14px;color:#A3A49B;">
+            <b style="color:#EBEAE4;">Консультация архитектора</b><br>От анализа участка до посадки дома — всё, что важно знать перед строительством. Здесь же презентация о компании.
+          </td>
+          <td width="76" valign="top" align="right" style="padding:0 0 14px;color:#8A8B82;font-size:13px;white-space:nowrap;">20–25 мин</td>
+        </tr>
+        <tr><td colspan="3" style="padding:0 0 14px;"><div style="height:1px;background:#1C1C16;line-height:1px;font-size:0;">&nbsp;</div></td></tr>
+        <tr>
+          <td width="36" valign="top" style="padding:0 12px 14px 0;color:#FCC90C;font-weight:bold;font-size:14px;font-family:'Unbounded','Arial Black',Arial,sans-serif;">07</td>
+          <td style="padding:0 0 14px;color:#A3A49B;">
+            <b style="color:#EBEAE4;">Открытый диалог</b><br>Ответы на любые вопросы.
+          </td>
+          <td width="76" valign="top" align="right" style="padding:0 0 14px;color:#8A8B82;font-size:13px;white-space:nowrap;">15 мин</td>
+        </tr>
+        <tr><td colspan="3" style="padding:0 0 14px;"><div style="height:1px;background:#1C1C16;line-height:1px;font-size:0;">&nbsp;</div></td></tr>
+        <tr>
+          <td width="36" valign="top" style="padding:0 12px 0 0;color:#FCC90C;font-weight:bold;font-size:14px;font-family:'Unbounded','Arial Black',Arial,sans-serif;">08</td>
+          <td style="padding:0;color:#A3A49B;">
+            <b style="color:#EBEAE4;">Трансфер на производственную площадку</b><br>При необходимости.
+          </td>
+          <td width="76" valign="top" align="right" style="padding:0;color:#8A8B82;font-size:13px;white-space:nowrap;">15 мин</td>
+        </tr>
+
+      </table>
+    </td></tr>
+
+    <tr><td style="padding:28px 32px 0;">
+      <div style="height:1px;background:#26261F;line-height:1px;font-size:0;">&nbsp;</div>
+    </td></tr>
+
+    <tr><td style="padding:24px 32px 0;font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:15px;line-height:1.62;color:#A3A49B;">
+      <b style="color:#EBEAE4;">Как доехать</b><br>
+      Нижний Новгород, ул.&nbsp;Зайцева,&nbsp;31,&nbsp;корпус&nbsp;1.<br>
+      Ориентир — проходная бывшего завода ЗКПД-4.<br>
+      <a href="{{route_url}}" style="color:#FCC90C;font-weight:bold;text-decoration:none;">Построить маршрут &rarr;</a>
+    </td></tr>
+
+    <tr><td style="padding:22px 32px 0;font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:14px;line-height:1.62;color:#A3A49B;">
+      Планы изменились? Ответьте на это письмо или позвоните:
+      <a href="tel:{{phone}}" style="color:#EBEAE4;font-weight:bold;text-decoration:none;">{{phone}}</a>.
+    </td></tr>
+
+    <tr><td style="padding:30px 32px 0;">
+      <div style="height:1px;background:#26261F;line-height:1px;font-size:0;">&nbsp;</div>
+    </td></tr>
+
+    <tr><td style="padding:20px 32px 32px;font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:12px;line-height:1.6;color:#6F7067;">
+      Письмо отправлено, потому что вы подтвердили регистрацию на День открытых дверей.<br>
+      <a href="{{unsubscribe_url}}" style="color:#6F7067;">Отписаться от писем</a>
+    </td></tr>
+
+  </table>
+
+</td></tr>
+</table>
+
+</body>
+</html>

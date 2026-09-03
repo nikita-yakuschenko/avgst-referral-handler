@@ -1,0 +1,116 @@
+<!-- ============================================================================
+  ПИСЬМО 1 — ПОДТВЕРЖДЕНИЕ ПОЧТЫ (double opt-in)
+  Отправляется сразу после появления сделки «Регистрация на день открытых дверей».
+
+  Палитра и шрифты наследуют тёмную тему лендинга — см. email/_shared.md.
+
+  Плейсхолдеры:
+    {{name}} {{confirm_url}} {{ttl_hours}} {{event_time}} {{unsubscribe_url}}
+============================================================================ -->
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
+<title>Подтвердите почту — День открытых дверей «Авангард Строй»</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Фирменные шрифты там, где клиент их поддерживает (Apple Mail, iOS).
+     Gmail, Outlook и Яндекс.Почта вырежут это и возьмут запасной стек. */
+  @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700&family=Inter:wght@400;500;600;700&display=swap');
+  body { margin:0; padding:0; }
+  a { color:#FCC90C; }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#050505;">
+
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+  Один шаг — и место на 12 сентября закреплено за вами.
+  &#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;
+</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#050505;">
+<tr><td align="center" style="padding:24px 12px;">
+
+  <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background:#0A0A0A;">
+
+    <tr><td style="padding:30px 32px 0;">
+      <img src="{{logo_url}}" width="160" height="45" alt="Авангард Строй" style="display:block;width:160px;height:45px;border:0;outline:none;text-decoration:none;">
+    </td></tr>
+
+    <tr><td style="padding:22px 32px 0;">
+      <div style="height:1px;background:#26261F;line-height:1px;font-size:0;">&nbsp;</div>
+    </td></tr>
+
+    <tr><td style="padding:30px 32px 0;">
+      <h1 style="margin:0;font-family:'Unbounded','Arial Black','Helvetica Neue',Arial,sans-serif;font-size:27px;line-height:1.2;color:#EBEAE4;font-weight:bold;letter-spacing:-.01em;">
+        Подтвердите почту
+      </h1>
+    </td></tr>
+
+    <tr><td style="padding:16px 32px 0;font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:16px;line-height:1.62;color:#A3A49B;">
+      {{name}}, вы записались на День открытых дверей на производстве
+      <span style="color:#EBEAE4;">«Авангард&nbsp;Строй»</span>.
+      Подтвердите адрес — мы закрепим за вами место и следом пришлём программу дня.
+    </td></tr>
+
+    <tr><td style="padding:28px 32px 0;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <tr><td align="center" bgcolor="#FCC90C" style="border-radius:4px;">
+          <a href="{{confirm_url}}"
+             style="display:inline-block;padding:16px 32px;font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:16px;font-weight:bold;color:#0A0A0A;text-decoration:none;border-radius:4px;">
+            Подтвердить почту
+          </a>
+        </td></tr>
+      </table>
+    </td></tr>
+
+    <tr><td style="padding:18px 32px 0;font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:13px;line-height:1.6;color:#8A8B82;">
+      Кнопка не нажимается? Скопируйте ссылку в браузер:<br>
+      <a href="{{confirm_url}}" style="color:#FCC90C;word-break:break-all;">{{confirm_url}}</a><br>
+      Ссылка действует {{ttl_hours}}&nbsp;часов.
+    </td></tr>
+
+    <tr><td style="padding:28px 32px 0;">
+      <div style="height:1px;background:#26261F;line-height:1px;font-size:0;">&nbsp;</div>
+    </td></tr>
+
+    <tr><td style="padding:24px 32px 0;font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:15px;line-height:1.5;">
+        <tr>
+          <td width="104" valign="top" style="padding:0 12px 12px 0;color:#8A8B82;font-size:11px;letter-spacing:.09em;">ДАТА</td>
+          <td style="padding:0 0 12px;color:#EBEAE4;font-weight:bold;">суббота, 12 сентября 2026</td>
+        </tr>
+        <tr>
+          <td width="104" valign="top" style="padding:0 12px 12px 0;color:#8A8B82;font-size:11px;letter-spacing:.09em;">ВРЕМЯ</td>
+          <td style="padding:0 0 12px;color:#EBEAE4;">{{event_time}}</td>
+        </tr>
+        <tr>
+          <td width="104" valign="top" style="padding:0 12px 12px 0;color:#8A8B82;font-size:11px;letter-spacing:.09em;">АДРЕС</td>
+          <td style="padding:0 0 12px;color:#EBEAE4;">Нижний Новгород, ул.&nbsp;Зайцева,&nbsp;31,&nbsp;корпус&nbsp;1</td>
+        </tr>
+        <tr>
+          <td width="104" valign="top" style="padding:0 12px 0 0;color:#8A8B82;font-size:11px;letter-spacing:.09em;">УЧАСТИЕ</td>
+          <td style="padding:0;color:#EBEAE4;">бесплатно, по записи</td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <tr><td style="padding:30px 32px 0;">
+      <div style="height:1px;background:#26261F;line-height:1px;font-size:0;">&nbsp;</div>
+    </td></tr>
+
+    <tr><td style="padding:20px 32px 32px;font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:12px;line-height:1.6;color:#6F7067;">
+      Если заявку оставляли не вы — просто не переходите по ссылке, регистрация не состоится.<br>
+      <a href="{{unsubscribe_url}}" style="color:#6F7067;">Отписаться от писем</a>
+    </td></tr>
+
+  </table>
+
+</td></tr>
+</table>
+
+</body>
+</html>

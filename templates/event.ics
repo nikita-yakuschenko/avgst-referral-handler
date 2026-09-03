@@ -1,0 +1,34 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Avangard Stroy//Open Day//RU
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VTIMEZONE
+TZID:Europe/Moscow
+BEGIN:STANDARD
+DTSTART:19700101T000000
+TZOFFSETFROM:+0300
+TZOFFSETTO:+0300
+TZNAME:MSK
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:{{uid}}@avgst.ru
+DTSTAMP:{{dtstamp}}
+SEQUENCE:0
+STATUS:CONFIRMED
+TRANSP:OPAQUE
+SUMMARY:День открытых дверей на производстве «Авангард Строй»
+DTSTART;TZID=Europe/Moscow:20260912T{{start_hhmmss}}
+DTEND;TZID=Europe/Moscow:20260912T{{end_hhmmss}}
+LOCATION:Россия\, Нижний Новгород\, ул. Зайцева\, 31\, корпус 1
+GEO:56.366321;43.791390
+DESCRIPTION:Экскурсия по цехам «Авангард Строй»: от отбора материалов до готового дома. Прогулка по будущему дому\, консультация архитектора и открытый диалог.\n\nОриентир — проходная бывшего завода ЗКПД-4.\n\nМаршрут: {{route_url}}\n\nУчастие бесплатное\, по записи.
+URL:{{landing_url}}
+BEGIN:VALARM
+ACTION:DISPLAY
+DESCRIPTION:Завтра — День открытых дверей «Авангард Строй»
+TRIGGER:-P1D
+END:VALARM
+END:VEVENT
+END:VCALENDAR

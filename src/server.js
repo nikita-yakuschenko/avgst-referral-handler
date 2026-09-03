@@ -13,7 +13,14 @@ import {
   resolveParticipantCode,
   participantReferralLink,
 } from "./bitrix.js";
-import { sendCodeEmail, sendConfirmEmail, verifySmtp } from "./mail.js";
+import {
+  sendCodeEmail,
+  sendConfirmEmail,
+  sendEventConfirmEmail,
+  sendEventProgrammeEmail,
+  verifySmtp,
+} from "./mail.js";
+import { buildIcs, isEventDeal } from "./event.js";
 import { confirmUrl, createConfirmToken, parseConfirmToken } from "./token.js";
 import { pageTemplate } from "./templates.js";
 import { logger, maskEmail } from "./logger.js";
@@ -94,10 +101,11 @@ async function startConfirmationFlow(entityType, entityId) {
   const entity = await getEntity(entityType, entityId);
   const title = extractTitle(entity);
 
-  // Жёсткий фильтр: только форма реферальной программы
-  if (!isReferralDeal(entity)) {
-    log("skip: not referral deal", { entityId, title });
-    return { skipped: true, reason: "not_referral_deal", title };
+  // Две ветки, обе по заголовку сделки. Всё, что не совпало, не наше.
+  const flow = resolveFlow(entity);
+  if (!flow) {
+    log("skip: title matches no flow", { entityId, title });
+    return { skipped: true, reason: "no_flow_match", title };
   }
 
   const person = await resolveDealPerson(entity);
@@ -116,20 +124,33 @@ async function startConfirmationFlow(entityType, entityId) {
 
   const token = createConfirmToken({ entityId, entityType, email });
   const url = confirmUrl(token);
-  await sendConfirmEmail({
-    email,
-    name,
-    confirmUrlValue: url,
-    expiresHours: config.tokenTtlHours,
-  });
+
+  if (flow === "event") {
+    await sendEventConfirmEmail({ email, name, confirmUrlValue: url });
+  } else {
+    await sendConfirmEmail({
+      email,
+      name,
+      confirmUrlValue: url,
+      expiresHours: config.tokenTtlHours,
+    });
+  }
 
     log("confirm email sent", {
+      flow,
       entityId,
       title,
       contactId: person.contactId || null,
       email: maskEmail(email),
     });
-  return { ok: true, entityId, emailSent: true };
+  return { ok: true, flow, entityId, emailSent: true };
+}
+
+/** Какая ветка обслуживает эту сделку: реферальная, мероприятие или никакая. */
+function resolveFlow(entity) {
+  if (isReferralDeal(entity)) return "referral";
+  if (isEventDeal(entity)) return "event";
+  return null;
 }
 
 app.get("/health", (_req, res) => {
@@ -140,7 +161,26 @@ app.get("/health", (_req, res) => {
     logLevel: config.logLevel,
     referralTitleMatch: config.referralTitleMatch,
     stageAfterConfirm: config.stageAfterConfirm,
+    eventTitleMatch: config.event.titleMatch,
+    eventStageAfterConfirm: config.event.stageAfterConfirm,
+    eventDate: config.event.date,
   });
+});
+
+/** Файл события для кнопки «Apple / Outlook (.ics)» в письме. */
+app.get("/event.ics", async (_req, res) => {
+  try {
+    const body = await buildIcs({ uid: "open-day-public" });
+    res.set({
+      "Content-Type": "text/calendar; charset=utf-8",
+      "Content-Disposition": 'attachment; filename="avangard-open-day.ics"',
+      "Cache-Control": "public, max-age=3600",
+    });
+    res.send(body);
+  } catch (err) {
+    log("ics error", { message: err.message });
+    res.status(500).send("ics_unavailable");
+  }
 });
 
 /**
@@ -217,11 +257,12 @@ app.get("/confirm", async (req, res) => {
 
     const entity = await getEntity(entityType, entityId);
 
-    if (!isReferralDeal(entity)) {
+    const flow = resolveFlow(entity);
+    if (!flow) {
       return res.status(400).send(
         pageTemplate({
           title: "Ошибка подтверждения",
-          message: "Эта заявка не относится к реферальной программе.",
+          message: "Эта заявка не относится ни к одной из наших форм.",
           ok: false,
         })
       );
@@ -246,13 +287,40 @@ app.get("/confirm", async (req, res) => {
       return res.status(200).send(
         pageTemplate({
           title: "Email уже подтверждён",
-          message: "Ничего делать не нужно. Если код не приходил — проверьте папку «Спам».",
+          message:
+            flow === "event"
+              ? "Ничего делать не нужно, вы в списке. Если письмо с программой не пришло — проверьте папку «Спам»."
+              : "Ничего делать не нужно. Если код не приходил — проверьте папку «Спам».",
           ok: true,
         })
       );
     }
 
     const name = person.name;
+
+    if (flow === "event") {
+      // UF «email подтверждён» на контакте + перевод сделки в стадию мероприятия.
+      // Реферальные UF (участник, ссылка) здесь намеренно не трогаются.
+      await markEmailConfirmed(entityType, entityId, person.contactId, config.event.stageAfterConfirm);
+      await sendEventProgrammeEmail({ email, name, entityId });
+
+      log("confirmed", {
+        flow,
+        entityId,
+        contactId: person.contactId || null,
+        stage: config.event.stageAfterConfirm,
+      });
+
+      return res.status(200).send(
+        pageTemplate({
+          title: "Вы записаны",
+          message:
+            "Почта подтверждена, место закреплено. Программу дня и событие для календаря отправили письмом.",
+          ok: true,
+        })
+      );
+    }
+
     const code = person.contactId || (await resolveParticipantCode(entity));
     const referralUrl = participantReferralLink(code);
 
@@ -262,6 +330,7 @@ app.get("/confirm", async (req, res) => {
     await sendCodeEmail({ email, name, code, referralUrl });
 
     log("confirmed", {
+      flow,
       entityId,
       contactId: code,
       referralUrl,
