@@ -99,7 +99,28 @@ function parseBitrixWebhookBody(body) {
   return { ok: true, event, entityId, entityType: "deal" };
 }
 
-async function startConfirmationFlow(entityType, entityId) {
+/**
+ * Bitrix на одну заявку с Tilda шлёт ONCRMDEALADD и следом ONCRMDEALUPDATE —
+ * сделка создаётся, и через секунду к ней привязывается контакт. Оба события
+ * доходят сюда, поэтому без этой защиты человек получает два одинаковых
+ * письма подряд.
+ *
+ * Окно живёт в памяти процесса: после перезапуска контейнера оно пустое, и это
+ * приемлемо — повтор возможен, только если то же событие придёт после рестарта.
+ */
+const recentConfirmations = new Map();
+
+function alreadyNotified(entityId) {
+  const ttl = config.confirmDedupeMinutes * 60 * 1000;
+  const now = Date.now();
+  for (const [id, at] of recentConfirmations) {
+    if (now - at > ttl) recentConfirmations.delete(id);
+  }
+  const at = recentConfirmations.get(String(entityId));
+  return Boolean(at && now - at <= ttl);
+}
+
+async function startConfirmationFlow(entityType, entityId, options = {}) {
   const entity = await getEntity(entityType, entityId);
   const title = extractTitle(entity);
 
@@ -124,18 +145,33 @@ async function startConfirmationFlow(entityType, entityId) {
     return { skipped: true, reason: "already_confirmed" };
   }
 
+  // Ручной перезапуск через API обязан пройти, поэтому окно проверяем
+  // только для событий вебхука.
+  if (!options.force && alreadyNotified(entityId)) {
+    log("skip: confirmation already sent recently", { entityId, flow });
+    return { skipped: true, reason: "duplicate_event", flow };
+  }
+  recentConfirmations.set(String(entityId), Date.now());
+
   const token = createConfirmToken({ entityId, entityType, email });
   const url = confirmUrl(token);
 
-  if (flow === "event") {
-    await sendEventConfirmEmail({ email, name, confirmUrlValue: url });
-  } else {
-    await sendConfirmEmail({
-      email,
-      name,
-      confirmUrlValue: url,
-      expiresHours: config.tokenTtlHours,
-    });
+  try {
+    if (flow === "event") {
+      await sendEventConfirmEmail({ email, name, confirmUrlValue: url });
+    } else {
+      await sendConfirmEmail({
+        email,
+        name,
+        confirmUrlValue: url,
+        expiresHours: config.tokenTtlHours,
+      });
+    }
+  } catch (err) {
+    // Метка ставится до отправки — иначе всплеск ADD+UPDATE успевает пройти
+    // дважды. Но если письмо не ушло, метка не должна блокировать повтор.
+    recentConfirmations.delete(String(entityId));
+    throw err;
   }
 
     log("confirm email sent", {
@@ -238,7 +274,7 @@ app.post("/api/referral/start", async (req, res) => {
     const entityId = Number(req.body?.entity_id || req.body?.entityId);
     if (!entityId) return res.status(400).json({ ok: false, error: "entity_id required" });
 
-    const result = await startConfirmationFlow("deal", entityId);
+    const result = await startConfirmationFlow("deal", entityId, { force: true });
     res.json(result);
   } catch (err) {
     log("start error", { message: err.message });

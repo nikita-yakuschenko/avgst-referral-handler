@@ -24,6 +24,8 @@ export const config = {
   tokenTtlHours: Number(process.env.TOKEN_TTL_HOURS || 72),
   rulesUrl: process.env.RULES_URL || "https://avgst.ru/referral",
   referralLinkTemplate: process.env.REFERRAL_LINK_TEMPLATE || "https://avgst.ru/?ref={code}",
+  // Окно, в котором повторное событие Bitrix по той же сделке не шлёт письмо
+  confirmDedupeMinutes: Number(process.env.CONFIRM_DEDUPE_MINUTES || 15),
   logLevel: (process.env.LOG_LEVEL || "info").trim().toLowerCase(),
   // Вторая ветка: «День открытых дверей». Реферальной логики не касается —
   // сделка попадает сюда только по совпадению заголовка.
