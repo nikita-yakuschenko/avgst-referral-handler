@@ -46,8 +46,7 @@ export const config = {
       process.env.EVENT_ROUTE_URL ||
       "https://yandex.ru/maps/?rtext=~56.366321,43.791390&rtt=auto",
     landingUrl: process.env.EVENT_LANDING_URL || "https://avgst.ru/",
-    phone: process.env.EVENT_PHONE || "+7 831 266-66-45",
-    unsubscribeUrl: process.env.EVENT_UNSUBSCRIBE_URL || "",
+    phone: process.env.EVENT_PHONE || "+7 831 266-66-45",
     confirmSubject:
       process.env.EVENT_CONFIRM_SUBJECT ||
       "Подтвердите почту — День открытых дверей «Авангард Строй»",

@@ -91,8 +91,7 @@ export async function renderConfirm({ name, confirmUrl }) {
     name: name ? `${name},` : "Здравствуйте,",
     confirm_url: confirmUrl,
     ttl_hours: config.tokenTtlHours,
-    event_time: e.timeLabel,
-    unsubscribe_url: e.unsubscribeUrl,
+    event_time: e.timeLabel,
   });
   const text = [
     `${name ? name + "," : "Здравствуйте,"} вы записались на День открытых дверей на производстве «Авангард Строй».`,
@@ -115,8 +114,7 @@ export async function renderReminder({ name }) {
     name: name ? `${name},` : "Здравствуйте,",
     event_time: e.timeLabel,
     route_url: e.routeUrl,
-    phone: e.phone,
-    unsubscribe_url: e.unsubscribeUrl,
+    phone: e.phone,
   });
   const text = [
     `${name ? name + "," : "Здравствуйте,"} напоминаем: День открытых дверей «Авангард Строй» завтра.`,
@@ -140,8 +138,7 @@ export async function renderProgramme({ name }) {
     google_cal_url: googleCalendarUrl(),
     ics_url: `${config.publicUrl}/event.ics`,
     route_url: e.routeUrl,
-    phone: e.phone,
-    unsubscribe_url: e.unsubscribeUrl,
+    phone: e.phone,
   });
   const text = [
     `${name ? name + "," : "Здравствуйте,"} почта подтверждена, место закреплено.`,
